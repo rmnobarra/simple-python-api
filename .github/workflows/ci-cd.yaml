@@ -47,7 +47,7 @@ jobs:
           tags: rmnobarra/simple-python-api:${{ github.sha }}
    
       - name: Setup Azure CLI
-        uses: azure/CLI@v1
+        uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
           
