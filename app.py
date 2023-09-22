@@ -2,9 +2,20 @@ from flask import Flask, jsonify, request, abort, Response
 from flasgger import Swagger
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 import time
+import logging
+import graypy
+import os
 
 app = Flask(__name__)
 swagger = Swagger(app)
+
+# Configurando o logging
+logging.basicConfig(level=logging.INFO)
+
+# Configurando o graypy
+graylog_host = os.environ.get('GRAYLOG_HOST', 'localhost')
+handler = graypy.GELFUDPHandler(graylog_host, 12201)
+logging.getLogger().addHandler(handler)
 
 # Definindo métricas
 REQUESTS = Counter('http_requests_total', 'Total HTTP Requests (count)', ['method', 'endpoint', 'status_code'])
@@ -14,9 +25,26 @@ def before_request():
     request.start_time = time.time()
 
 @app.after_request
-def increment_request_count(response):
-    request_latency = time.time() - request.start_time
-    REQUESTS.labels(request.method, request.path, response.status_code).inc()
+def after_request(response):
+    # When: Quando a requisição foi feita
+    timestamp = time.strftime('[%Y-%b-%d %H:%M]')
+    # Where: De onde a requisição foi feita
+    remote_addr = request.remote_addr
+    # What: O que aconteceu
+    method = request.method
+    url = request.url
+    # Who: Quem fez a requisição
+    user_agent = request.user_agent.string
+    # Calculando a duração da requisição e arredondando para 3 casas decimais
+    duration = round(time.time() - request.start_time, 3)
+    # Status da resposta
+    status_code = response.status_code
+    
+    # Logando as informações
+    logging.info('%s | %s | %s | %s | %s | Status: %s | Duration: %s s', timestamp, remote_addr, method, url, user_agent, status_code, duration)
+    
+    # Incrementando o contador de requisições
+    REQUESTS.labels(method, url, status_code).inc()
     return response
 
 @app.route('/metrics')
