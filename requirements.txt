@@ -1,2 +1,5 @@
 flasgger==0.9.7.1
 Flask==2.3.3
+prometheus-client==0.17.1
+#prometheus-flask-exporter==0.22.4
+

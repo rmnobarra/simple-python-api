@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+
+
+networks:
+  monitoring:
+
+volumes:
+  grafana-storage:

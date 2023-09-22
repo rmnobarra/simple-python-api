@@ -12,3 +12,8 @@ Your API is available on http://localhost:5000. You can do a test call to the fo
 docker build -t simple-python-api .
 
 docker run -p 5000:5000 simple-python-api
+
+
+grafana
+
+admin / admin

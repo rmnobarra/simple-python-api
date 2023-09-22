@@ -1,10 +1,8 @@
 from flask import Flask, jsonify, request, abort, Response
-from flasgger import Swagger
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 import time
 
 app = Flask(__name__)
-swagger = Swagger(app)
 
 # Definindo métricas
 REQUESTS = Counter('http_requests_total', 'Total HTTP Requests (count)', ['method', 'endpoint', 'status_code'])
@@ -31,36 +29,10 @@ users = [
 
 @app.route('/users', methods=['GET'])
 def get_users():
-    """
-    Retorna a lista de usuários
-    ---
-    responses:
-      200:
-        description: Lista de usuários
-        examples:
-          [{"id": 546, "username": "John"}, {"id": 894, "username": "Mary"}, {"id": 326, "username": "Jane"}]
-    """
     return jsonify(users)
 
 @app.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    """
-    Deleta um usuário pelo ID
-    ---
-    parameters:
-      - name: user_id
-        in: path
-        type: integer
-        required: true
-        description: ID do usuário
-    responses:
-      200:
-        description: Usuário deletado com sucesso
-        examples:
-          {"result": "success"}
-      404:
-        description: Usuário não encontrado
-    """
     user = next((user for user in users if user['id'] == user_id), None)
     if user is None:
         abort(404)
