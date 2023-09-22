@@ -25,7 +25,12 @@ jobs:
       
       - name: Run Tests
         run: python -m unittest test.py
-  
+
+      - name: Run Codesmell with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
   build_and_push:
     needs: test
     runs-on: ubuntu-latest
@@ -77,3 +82,35 @@ jobs:
               echo "Deployment does not exist, applying kubectl apply -f..."
               kubectl apply -f deployment.yaml -n $NAMESPACE
           fi
+
+
+
+name: Python CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    # Passo para executar flake8
+    - name: Run flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # Adicione aqui os outros passos do seu workflow, como testes, build, push da imagem Docker, e deploy no AKS
