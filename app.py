@@ -1,13 +1,29 @@
 from flask import Flask, jsonify, request, abort, Response
 from flasgger import Swagger
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+from jaeger_client import Config
+from flask_opentracing import FlaskTracer
 import time
 import logging
 import graypy
 import os
 
+
 app = Flask(__name__)
 swagger = Swagger(app)
+
+# Configurando o Jaeger Tracing
+jaeger_config = Config(
+    config={
+        'sampler': {'type': 'const', 'param': 1},
+        'local_agent': {'reporting_host': 'jaeger', 'reporting_port': 5775},
+        'logging': True,
+    },
+    service_name='simple_python_api',
+    validate=True,
+)
+jaeger_tracer = jaeger_config.initialize_tracer()
+tracer = FlaskTracer(jaeger_tracer, True, app)
 
 # Configurando o logging
 logging.basicConfig(level=logging.INFO)
@@ -68,8 +84,13 @@ def get_users():
         examples:
           [{"id": 546, "username": "John"}, {"id": 894, "username": "Mary"}, {"id": 326, "username": "Jane"}]
     """
-    return jsonify(users)
-
+    if tracer:
+        with tracer.start_span('get_users') as span:
+            return jsonify(users)
+    else:
+        app.logger.error("Tracer not initialized")
+        return jsonify(users)
+    
 @app.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     """
@@ -89,11 +110,12 @@ def delete_user(user_id):
       404:
         description: Usuário não encontrado
     """
-    user = next((user for user in users if user['id'] == user_id), None)
-    if user is None:
-        abort(404)
-    users.remove(user)
-    return jsonify({'result': 'success'})
+    with tracer.trace('delete_user'):
+        user = next((user for user in users if user['id'] == user_id), None)
+        if user is None:
+            abort(404)
+        users.remove(user)
+        return jsonify({'result': 'success'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
