@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-python-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: simple-python-api
+  template:
+    metadata:
+      labels:
+        app: simple-python-api
+    spec:
+      containers:
+        - name: simple-python-api
+          image: rmnobarra/simple-python-api:latest
+          ports:
+            - containerPort: 5000

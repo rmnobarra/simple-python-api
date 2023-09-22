@@ -44,4 +44,26 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: rmnobarra/simple-python-api:latest
+          tags: rmnobarra/simple-python-api:${{ github.sha }}
+   
+      - name: Setup Azure CLI
+        uses: azure/setup-azure-cli@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Decode kubeconfig
+        run: echo "${{ secrets.KUBECONFIG }}" | base64 --decode > $GITHUB_WORKSPACE/kubeconfig.yaml
+            
+      - name: Deploy to Kubernetes
+        run: |
+          DEPLOYMENT_NAME=simple-python-api
+          NAMESPACE=default
+          IMAGE_NAME=rmnobarra/simple-python-api:${{ github.sha }}
+
+          if kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE; then
+              echo "Deployment exists, updating image..."
+              kubectl set image deployment/$DEPLOYMENT_NAME $DEPLOYMENT_NAME=$IMAGE_NAME -n $NAMESPACE --record
+          else
+              echo "Deployment does not exist, applying kubectl apply -f..."
+              kubectl apply -f <caminho-do-seu-arquivo-de-deployment>.yaml -n $NAMESPACE
+          fi
