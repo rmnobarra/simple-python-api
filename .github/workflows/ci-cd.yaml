@@ -46,13 +46,22 @@ jobs:
           push: true
           tags: rmnobarra/simple-python-api:${{ github.sha }}
    
-      - name: Setup Azure CLI
-        uses: azure/login@v1
+      - name: Azure login
+        id: login
+        uses: azure/login@v1.4.3
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
-      - name: Decode kubeconfig
-        run: echo "${{ secrets.KUBECONFIG }}" | base64 --decode > $GITHUB_WORKSPACE/kubeconfig.yaml
+
+      - name: Set AKS context
+        id: set-context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: '${{ secrets.resource_group }}' 
+          cluster-name: '${{ secrets.cluster_name }}'
+
+      - name: Setup kubectl
+        id: install-kubectl
+        uses: azure/setup-kubectl@v3
             
       - name: Deploy to Kubernetes
         run: |
@@ -65,5 +74,5 @@ jobs:
               kubectl set image deployment/$DEPLOYMENT_NAME $DEPLOYMENT_NAME=$IMAGE_NAME -n $NAMESPACE --record
           else
               echo "Deployment does not exist, applying kubectl apply -f..."
-              kubectl apply -f <caminho-do-seu-arquivo-de-deployment>.yaml -n $NAMESPACE
+              kubectl apply -f deployment.yaml -n $NAMESPACE
           fi
