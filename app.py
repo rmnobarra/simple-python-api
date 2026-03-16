@@ -1,8 +1,7 @@
-from flask import Flask, jsonify, request, abort
-from flasgger import Swagger
+from fastapi import FastAPI, HTTPException
+import uvicorn
 
-app = Flask(__name__)
-swagger = Swagger(app)
+app = FastAPI()
 
 users = [
     {'id': 546, 'username': 'John'},
@@ -10,43 +9,20 @@ users = [
     {'id': 326, 'username': 'Jane'}
 ]
 
-@app.route('/users', methods=['GET'])
-def get_users():
-    """
-    Retorna a lista de usuários
-    ---
-    responses:
-      200:
-        description: Lista de usuários
-        examples:
-          [{"id": 546, "username": "John"}, {"id": 894, "username": "Mary"}, {"id": 326, "username": "Jane"}]
-    """
-    return jsonify(users)
 
-@app.route('/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    """
-    Deleta um usuário pelo ID
-    ---
-    parameters:
-      - name: user_id
-        in: path
-        type: integer
-        required: true
-        description: ID do usuário
-    responses:
-      200:
-        description: Usuário deletado com sucesso
-        examples:
-          {"result": "success"}
-      404:
-        description: Usuário não encontrado
-    """
-    user = next((user for user in users if user['id'] == user_id), None)
+@app.get('/users')
+def get_users():
+    return users
+
+
+@app.delete('/users/{user_id}')
+def delete_user(user_id: int):
+    user = next((u for u in users if u['id'] == user_id), None)
     if user is None:
-        abort(404)
+        raise HTTPException(status_code=404)
     users.remove(user)
-    return jsonify({'result': 'success'})
+    return {'result': 'success'}
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=False)
+    uvicorn.run(app, host='0.0.0.0', port=5000)
