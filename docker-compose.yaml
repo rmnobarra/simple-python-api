@@ -11,7 +11,7 @@ services:
       - monitoring
 
   k6:
-    image: loadimpact/k6
+    image: grafana/k6
     volumes:
       - ./loadTest.js:/loadTest.js
     depends_on:

@@ -11,17 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: '3.12'
       
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install flake8==6.1.0
       
       - name: Run Tests
         run: python -m unittest test.py
@@ -36,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -60,34 +61,3 @@ jobs:
           tags: |
             rmnobarra/simple-python-api:${{ github.sha }}
             rmnobarra/simple-python-api:latest
-   
-      - name: Azure login
-        id: login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Set AKS context
-        id: set-context
-        uses: azure/aks-set-context@v3
-        with:
-          resource-group: '${{ secrets.resource_group }}' 
-          cluster-name: '${{ secrets.cluster_name }}'
-
-      - name: Setup kubectl
-        id: install-kubectl
-        uses: azure/setup-kubectl@v3
-            
-      - name: Deploy to Kubernetes
-        run: |
-          DEPLOYMENT_NAME=simple-python-api
-          NAMESPACE=default
-          IMAGE_NAME=rmnobarra/simple-python-api:${{ github.sha }}
-
-          if kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE; then
-              echo "Deployment exists, updating image..."
-              kubectl set image deployment/$DEPLOYMENT_NAME $DEPLOYMENT_NAME=$IMAGE_NAME -n $NAMESPACE --record
-          else
-              echo "Deployment does not exist, applying kubectl apply -f..."
-              kubectl apply -f deployment.yaml -n $NAMESPACE
-          fi
